@@ -60,7 +60,10 @@
                         <div class="dropdown-divider"></div>
                         <!-- text-->
                         <form th:action="@{/logout}" method="post">
-                            <button type="submit"><i class="fa fa-power-off"></i> Logout</button>
+                            <button type="submit" class="btn btn-danger"><i class="fa fa-power-off"></i> Logout</button>
+                        </form>
+                        <form th:action="@{/manager/reset}" method="post">
+                            <button type="submit" class="btn btn-dark"><i class="fa fa-arrow-alt-circle-right"></i> Reset</button>
                         </form>
                         <!-- text-->
                     </div>
