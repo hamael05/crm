@@ -11,15 +11,13 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import site.easy.to.build.crm.entity.Customer;
-import site.easy.to.build.crm.entity.CustomerLoginInfo;
-import site.easy.to.build.crm.entity.OAuthUser;
-import site.easy.to.build.crm.entity.User;
+import site.easy.to.build.crm.entity.*;
 import site.easy.to.build.crm.google.service.acess.GoogleAccessService;
 import site.easy.to.build.crm.google.service.gmail.GoogleGmailApiService;
 import site.easy.to.build.crm.service.contract.ContractService;
 import site.easy.to.build.crm.service.customer.CustomerLoginInfoService;
 import site.easy.to.build.crm.service.customer.CustomerService;
+import site.easy.to.build.crm.service.depense.BudgetService;
 import site.easy.to.build.crm.service.lead.LeadService;
 import site.easy.to.build.crm.service.ticket.TicketService;
 import site.easy.to.build.crm.service.user.UserService;
@@ -27,7 +25,9 @@ import site.easy.to.build.crm.util.AuthenticationUtils;
 import site.easy.to.build.crm.util.AuthorizationUtil;
 import site.easy.to.build.crm.util.EmailTokenUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -43,11 +43,12 @@ public class CustomerController {
     private final TicketService ticketService;
     private final ContractService contractService;
     private final LeadService leadService;
+    private final BudgetService budgetService;
 
     @Autowired
     public CustomerController(CustomerService customerService, UserService userService, CustomerLoginInfoService customerLoginInfoService,
                               AuthenticationUtils authenticationUtils, GoogleGmailApiService googleGmailApiService, Environment environment,
-                              TicketService ticketService, ContractService contractService, LeadService leadService) {
+                              TicketService ticketService, ContractService contractService, LeadService leadService, BudgetService budgetService) {
         this.customerService = customerService;
         this.userService = userService;
         this.customerLoginInfoService = customerLoginInfoService;
@@ -57,6 +58,7 @@ public class CustomerController {
         this.ticketService = ticketService;
         this.contractService = contractService;
         this.leadService = leadService;
+        this.budgetService = budgetService;
     }
 
     @GetMapping("/manager/all-customers")
@@ -209,5 +211,47 @@ public class CustomerController {
         return "redirect:/employee/customer/my-customers";
     }
 
+    @GetMapping("/manager/budget-customer")
+    public String budgetCustomer(Model model){
+        List<Customer> customers;
+        try {
+            customers = customerService.findAll();
+        } catch (Exception e){
+            return "error/500";
+        }
+        model.addAttribute("customers",customers);
+        model.addAttribute("budget",new Budget());
+        return "customer/budget-customer";
+    }
+
+    @PostMapping("/manager/budget-customer")
+    public String insertBudgetCustomer(@ModelAttribute("budget") @Validated Budget budget, BindingResult bindingResult, Authentication authentication, Model model, @RequestParam("customerId") int customerId, @RequestParam("amount") double amount){
+        int userId = authenticationUtils.getLoggedInUserId(authentication);
+        User manager = userService.findById(userId);
+        if(bindingResult.hasErrors()) {
+            List<User> employees = new ArrayList<>();
+            List<Customer> customers;
+
+            if(AuthorizationUtil.hasRole(authentication, "ROLE_MANAGER")) {
+                employees = userService.findAll();
+                customers = customerService.findAll();
+            } else {
+                employees.add(manager);
+                customers = customerService.findByUserId(manager.getId());
+            }
+
+            model.addAttribute("customers",customers);
+            model.addAttribute("budget",budget);
+            return "customer/budget-customer";
+        }
+
+        budget.setCustomer(customerService.findByCustomerId(customerId));
+        budget.setCreatedAt(LocalDateTime.now());
+        budgetService.save(budget);
+
+        List<Customer> customers = customerService.findAll();
+        model.addAttribute("customers",customers);
+        return "customer/all-customers";
+    }
 
 }

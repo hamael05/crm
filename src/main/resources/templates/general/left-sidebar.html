@@ -99,6 +99,7 @@
                         <li><a th:if="${#authorization.expression('hasRole(''ROLE_MANAGER'')')}" th:href="${home + 'employee/customer/manager/all-customers'}">All customers</a></li>
                         <li><a th:href="${home + 'employee/customer/my-customers'}">My customers</a></li>
                         <li><a th:href="${home + 'employee/customer/create-customer'}">Create customer</a></li>
+                        <li><a th:if="${#authorization.expression('hasRole(''ROLE_MANAGER'')')}" th:href="${home + 'employee/customer/manager/budget-customer'}">Ajout budget</a></li>
                     </ul>
                 </li>
                 <li class="nav-small-cap">--- Tickets</li>
@@ -154,6 +155,7 @@
                         <li><a th:href="${home + 'employee/email-template/create'}">Create Template</a></li>
                     </ul>
                 </li>
+                <li><a th:if="${#authorization.expression('hasRole(''ROLE_MANAGER'')')}" th:href="${home + 'employee/taux/manager/taux-depense'}">Taux</a></li>
             </ul>
             <ul id="sidebarnav" th:if="${#authorization.expression('hasRole(''ROLE_CUSTOMER'')')}">
                 <li class="user-pro">

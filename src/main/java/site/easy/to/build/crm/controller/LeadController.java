@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
@@ -16,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import site.easy.to.build.crm.entity.*;
 import site.easy.to.build.crm.entity.settings.LeadEmailSettings;
 import site.easy.to.build.crm.google.model.calendar.EventDisplay;
@@ -26,6 +28,9 @@ import site.easy.to.build.crm.google.service.calendar.GoogleCalendarApiService;
 import site.easy.to.build.crm.google.service.drive.GoogleDriveApiService;
 import site.easy.to.build.crm.google.service.gmail.GoogleGmailApiService;
 import site.easy.to.build.crm.service.customer.CustomerService;
+import site.easy.to.build.crm.service.depense.BudgetService;
+import site.easy.to.build.crm.service.depense.DepenseService;
+import site.easy.to.build.crm.service.depense.TauxService;
 import site.easy.to.build.crm.service.drive.GoogleDriveFileService;
 import site.easy.to.build.crm.service.file.FileService;
 import site.easy.to.build.crm.service.lead.LeadActionService;
@@ -37,6 +42,7 @@ import site.easy.to.build.crm.util.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -60,12 +66,15 @@ public class LeadController {
     private final LeadEmailSettingsService leadEmailSettingsService;
     private final GoogleGmailApiService googleGmailApiService;
     private final EntityManager entityManager;
+    private final DepenseService depenseService;
+    private final BudgetService budgetService;
+    private final TauxService tauxService;
 
     @Autowired
     public LeadController(LeadService leadService, AuthenticationUtils authenticationUtils, UserService userService, CustomerService customerService,
                           LeadActionService leadActionService, GoogleCalendarApiService googleCalendarApiService, FileService fileService,
                           GoogleDriveApiService googleDriveApiService, GoogleDriveFileService googleDriveFileService, FileUtil fileUtil,
-                          LeadEmailSettingsService leadEmailSettingsService, GoogleGmailApiService googleGmailApiService, EntityManager entityManager) {
+                          LeadEmailSettingsService leadEmailSettingsService, GoogleGmailApiService googleGmailApiService, EntityManager entityManager, DepenseService depenseService, BudgetService budgetService, TauxService tauxService) {
         this.leadService = leadService;
         this.authenticationUtils = authenticationUtils;
         this.userService = userService;
@@ -79,6 +88,9 @@ public class LeadController {
         this.leadEmailSettingsService = leadEmailSettingsService;
         this.googleGmailApiService = googleGmailApiService;
         this.entityManager = entityManager;
+        this.depenseService = depenseService;
+        this.budgetService = budgetService;
+        this.tauxService = tauxService;
     }
 
     @GetMapping("/show/{id}")
@@ -124,18 +136,20 @@ public class LeadController {
     }
 
     @GetMapping("/assigned-leads")
-    public String showAssignedEmployeeLeads(Authentication authentication, Model model) {
+    public String showAssignedEmployeeLeads(Authentication authentication, Model model, @ModelAttribute("alertMessage") String alertMessage) {
         int userId = authenticationUtils.getLoggedInUserId(authentication);
         List<Lead> leads = leadService.findAssignedLeads(userId);
         model.addAttribute("leads", leads);
+        model.addAttribute("alertMessage", alertMessage);
         return "lead/show-my-leads";
     }
 
     @GetMapping("/created-leads")
-    public String showCreatedEmployeeLeads(Authentication authentication, Model model) {
+    public String showCreatedEmployeeLeads(Authentication authentication, Model model, @ModelAttribute("alertMessage") String alertMessage) {
         int userId = authenticationUtils.getLoggedInUserId(authentication);
         List<Lead> leads = leadService.findCreatedLeads(userId);
         model.addAttribute("leads", leads);
+        model.addAttribute("alertMessage", alertMessage);
         return "lead/show-my-leads";
     }
 
@@ -168,7 +182,7 @@ public class LeadController {
     public String createLead(@ModelAttribute("lead") @Validated Lead lead, BindingResult bindingResult,
                              @RequestParam("customerId") int customerId, @RequestParam("employeeId") int employeeId,
                              Authentication authentication, @RequestParam("allFiles")@Nullable String files,
-                             @RequestParam("folderId") @Nullable String folderId, Model model) throws JsonProcessingException {
+                             @RequestParam("folderId") @Nullable String folderId, Model model, @RequestParam("amount") double amountDouble, RedirectAttributes redirectAttributes, HttpSession session) throws JsonProcessingException {
 
         int userId = authenticationUtils.getLoggedInUserId(authentication);
         User manager = userService.findById(userId);
@@ -208,7 +222,30 @@ public class LeadController {
             }
         }
 
+
+
+        Depense depense = new Depense();
+        depense.setAmount(BigDecimal.valueOf(amountDouble));
+        depense.setTicket(null);
+        depense.setLead(lead);
+        depense.setCreatedAt(LocalDateTime.now());
+
+        if (depenseDepasseBudget(customerId, amountDouble)) {
+            session.setAttribute("depense", depense);
+            session.setAttribute("lead", lead);
+            model.addAttribute("popUp", true);
+            return "lead/create-lead";
+        }
+
         Lead createdLead = leadService.save(lead);
+        depenseService.save(depense);
+
+        redirectAttributes.addFlashAttribute("alertMessage","");
+        if (depenseDepasseSeilTauxBudget(customerId)){
+            redirectAttributes.addFlashAttribute("alertMessage", "Dépense a dépassé le seuil du budget  !");
+        }
+
+
         fileUtil.saveFiles(allFiles, createdLead);
 
         if (lead.getGoogleDrive() != null) {
@@ -612,4 +649,50 @@ public class LeadController {
         model.addAttribute("folders", folders);
         model.addAttribute("hasGoogleDriveAccess", hasGoogleDriveAccess);
     }
+
+    public boolean depenseDepasseSeilTauxBudget (int customerId) {
+        double sommeDepense = depenseService.sommeDepenseByCustomerId(customerId);
+        double sommeBudget = budgetService.sommeBudgetByCustomer(customerId);
+        System.out.println("sommeDepense = " + sommeDepense);
+        System.out.println("sommeBudget = " + sommeBudget);
+        System.out.println("customerId = " + customerId);
+        Taux taux = tauxService.getLast();
+        double tauxValue = taux.getPourcentage().doubleValue();
+        if (sommeDepense > sommeBudget*tauxValue/100 ) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean depenseDepasseBudget (int customerId, double amountDouble) {
+        double sommeDepense = depenseService.sommeDepenseByCustomerId(customerId);
+        double sommeBudget = budgetService.sommeBudgetByCustomer(customerId);
+        System.out.println("sommeDepense = " + sommeDepense);
+        System.out.println("sommeBudget = " + sommeBudget);
+        System.out.println("customerId = " + customerId);
+        if (sommeDepense + amountDouble > sommeBudget) {
+            return true;
+        }
+        return false;
+    }
+
+    @PostMapping("/annuler")
+    public String annulerLead() {
+
+        return "redirect:/employee/lead/create";
+    }
+
+    @PostMapping("/confirmer")
+    public String confirmerLead(HttpSession session) {
+
+        Lead lead = (Lead) session.getAttribute("lead");
+        leadService.save(lead);
+        Depense depense = (Depense) session.getAttribute("depense");
+        depenseService.save(depense);
+
+
+        return "redirect:/employee/lead/assigned-leads";
+    }
+
+
 }
