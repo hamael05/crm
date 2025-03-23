@@ -17,4 +17,8 @@ public interface DepenseRepository extends JpaRepository<Depense, Integer> {
     List<Depense> findAllByCustomerId(int customerId);
 
     List<Depense> findByLeadCustomerCustomerIdOrTicketCustomerCustomerId(int leadCustomerId, int ticketCustomerId);
+
+    Depense findByLeadLeadId(int leadId);
+
+    Depense findByTicketTicketId(int ticketId);
 }

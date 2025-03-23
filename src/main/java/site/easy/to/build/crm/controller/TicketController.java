@@ -188,8 +188,6 @@ public class TicketController {
         depense.setLead(null);
         depense.setCreatedAt(LocalDateTime.now());
 
-
-
         if (depenseDepasseBudget(customerId, amountDouble)) {
             session.setAttribute("depense", depense);
             session.setAttribute("ticket", ticket);
@@ -199,7 +197,6 @@ public class TicketController {
 
         ticketService.save(ticket);
         depenseService.save(depense);
-
 
         redirectAttributes.addFlashAttribute("alertMessage","");
         if (depenseDepasseSeilTauxBudget(customerId)){

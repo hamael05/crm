@@ -55,6 +55,8 @@ public class SecurityConfig {
 
         http.csrf((csrf) -> csrf
                 .csrfTokenRepository(httpSessionCsrfTokenRepository)
+                .ignoringRequestMatchers("/api/auth/**")
+                .ignoringRequestMatchers("/api/rest/**")
         );
 
         http.
@@ -69,6 +71,8 @@ public class SecurityConfig {
                         .requestMatchers("/save").permitAll()
                         .requestMatchers("/js/**").permitAll()
                         .requestMatchers("/css/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/rest/**").permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/**/manager/**")).hasRole("MANAGER")
                         .requestMatchers("/employee/**").hasAnyRole("MANAGER", "EMPLOYEE")
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")

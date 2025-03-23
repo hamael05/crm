@@ -221,9 +221,7 @@ public class LeadController {
                 return "error/500";
             }
         }
-
-
-
+        
         Depense depense = new Depense();
         depense.setAmount(BigDecimal.valueOf(amountDouble));
         depense.setTicket(null);

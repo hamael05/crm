@@ -31,4 +31,16 @@ public class DepenseService {
         }
         return sum.doubleValue();
     }
+
+    public Depense findByLeadId(int leadId) { return repository.findByLeadLeadId(leadId); }
+
+    public Depense findByTicketId(int ticketId) { return repository.findByTicketTicketId(ticketId); }
+
+    public void deleteByLeadId(int leadId) {
+        repository.delete(repository.findByLeadLeadId(leadId));
+    }
+
+    public void deleteByTicketId(int ticketId) {
+        repository.delete(repository.findByTicketTicketId(ticketId));
+    }
 }
