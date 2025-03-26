@@ -12,6 +12,8 @@ import site.easy.to.build.crm.entity.Taux;
 import site.easy.to.build.crm.service.depense.BudgetService;
 import site.easy.to.build.crm.service.depense.DepenseService;
 import site.easy.to.build.crm.service.depense.TauxService;
+import site.easy.to.build.crm.service.lead.LeadService;
+import site.easy.to.build.crm.service.ticket.TicketService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +28,10 @@ public class RestAPIController {
     private DepenseService depenseService;
     @Autowired
     private TauxService tauxService;
+    @Autowired
+    private LeadService leadService;
+    @Autowired
+    private TicketService ticketService;
 
     @GetMapping("/budgets")
     public ResponseEntity<List<Budget>> getAllBudgets() {
@@ -70,6 +76,7 @@ public class RestAPIController {
     @PostMapping("/delete-lead/{leadId}")
     public ResponseEntity<String> deleteLead(@PathVariable int leadId) {
         try {
+            leadService.delete(leadService.findByLeadId(leadId));
             depenseService.deleteByLeadId(leadId);
             return ResponseEntity.ok("deleted");
         } catch (EntityNotFoundException e) {
@@ -82,6 +89,7 @@ public class RestAPIController {
     @PostMapping("/delete-ticket/{ticketId}")
     public ResponseEntity<String> deleteTicket(@PathVariable int ticketId) {
         try {
+            ticketService.delete(ticketService.findByTicketId(ticketId));
             depenseService.deleteByTicketId(ticketId);
             return ResponseEntity.ok("deleted");
         } catch (EntityNotFoundException e) {

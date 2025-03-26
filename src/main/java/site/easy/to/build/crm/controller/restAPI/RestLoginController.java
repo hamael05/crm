@@ -1,5 +1,7 @@
 package site.easy.to.build.crm.controller.restAPI;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import site.easy.to.build.crm.service.login.LoginService;
 import site.easy.to.build.crm.service.role.RoleService;
 import site.easy.to.build.crm.service.user.UserService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,6 +31,9 @@ public class RestLoginController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    LoginService loginService;
 
 
 
@@ -72,5 +78,12 @@ public class RestLoginController {
         }
         return false;
     }
+
+    @GetMapping("/checkSessionValidate/{sessionId}")
+    public ResponseEntity<?> checkSessionValidate(@PathVariable String sessionId, HttpServletRequest request) {
+        return ResponseEntity.ok(loginService.hasRoleManager(sessionId, request));
+    }
+
+
 }
 

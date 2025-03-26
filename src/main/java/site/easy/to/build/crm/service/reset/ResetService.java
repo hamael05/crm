@@ -35,6 +35,10 @@ public class ResetService {
         tables.add("trigger_contract");
         tables.add("trigger_lead");
         tables.add("trigger_ticket");
+        tables.add("depense");
+        tables.add("budget");
+        tables.add("customer");
+        tables.add("customer_login_info");
 
         for (String table : tables) {
             jdbcTemplate.execute("TRUNCATE TABLE " + table); // Vider la table et réinitialiser AUTO_INCREMENT

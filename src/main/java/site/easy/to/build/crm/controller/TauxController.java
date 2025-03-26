@@ -52,4 +52,6 @@ public class TauxController {
         model.addAttribute("taux", newTaux);
         return "taux/taux-depense";
     }
+
+
 }

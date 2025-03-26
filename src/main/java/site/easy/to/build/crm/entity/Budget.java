@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "budget")
@@ -49,8 +52,22 @@ public class Budget {
         return amount;
     }
 
+
     public void setAmount(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Amount must be greater than or equal to zero");
+        }
         this.amount = amount;
+    }
+
+    public void setAmount(String amount) {
+        if (!isValidNumber(amount)) {
+            throw new IllegalArgumentException("Expense format invalid : " + amount);
+        }
+        if (BigDecimal.valueOf(Double.parseDouble(amount)).compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Amount must be greater than or equal to zero");
+        }
+        this.amount = BigDecimal.valueOf(Double.parseDouble(amount));
     }
 
     public LocalDateTime getCreatedAt() {
@@ -59,6 +76,33 @@ public class Budget {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    private boolean isValidNumber(String input) {
+        try {
+            parseToBigDecimal(input);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private BigDecimal parseToBigDecimal(String input) {
+        try {
+            // Essayer le format français (1.234,56)
+            NumberFormat formatFR = NumberFormat.getInstance(Locale.FRANCE);
+            Number number = formatFR.parse(input);
+            return new BigDecimal(number.toString());
+        } catch (ParseException e1) {
+            try {
+                // Essayer le format anglais (1,234.56)
+                NumberFormat formatUS = NumberFormat.getInstance(Locale.US);
+                Number number = formatUS.parse(input);
+                return new BigDecimal(number.toString());
+            } catch (ParseException e2) {
+                throw new IllegalArgumentException("Invalid number format: " + input);
+            }
+        }
     }
 
 

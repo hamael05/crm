@@ -681,14 +681,19 @@ public class LeadController {
     }
 
     @PostMapping("/confirmer")
-    public String confirmerLead(HttpSession session) {
+    public String confirmerLead(HttpSession session, Authentication authentication) {
 
         Lead lead = (Lead) session.getAttribute("lead");
         leadService.save(lead);
         Depense depense = (Depense) session.getAttribute("depense");
         depenseService.save(depense);
 
-
+        if (lead.getStatus().equals("meeting-to-schedule")) {
+            return "redirect:/employee/calendar/create-event?leadId=" + lead.getLeadId();
+        }
+        if(AuthorizationUtil.hasRole(authentication, "ROLE_MANAGER")) {
+            return "redirect:/employee/lead/created-leads";
+        }
         return "redirect:/employee/lead/assigned-leads";
     }
 

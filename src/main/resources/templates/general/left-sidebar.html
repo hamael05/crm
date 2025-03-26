@@ -156,6 +156,7 @@
                     </ul>
                 </li>
                 <li><a th:if="${#authorization.expression('hasRole(''ROLE_MANAGER'')')}" th:href="${home + 'employee/taux/manager/taux-depense'}">Taux</a></li>
+                <li><a th:if="${#authorization.expression('hasRole(''ROLE_MANAGER'')')}" th:href="${home + 'employee/import/manager/import-page'}">Import</a></li>
             </ul>
             <ul id="sidebarnav" th:if="${#authorization.expression('hasRole(''ROLE_CUSTOMER'')')}">
                 <li class="user-pro">
