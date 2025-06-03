@@ -45,7 +45,7 @@ public class DepenseModelCSV {
     }
 
     public void setStatus(String status) {
-        if (getType().equals("lead")){
+        /*if (getType().equals("lead")){
             List<String> options = new ArrayList<>();
             options.add("meeting-to-schedule");
             options.add("assign-to-sales");
@@ -69,8 +69,8 @@ public class DepenseModelCSV {
             if (!options.contains(status.toLowerCase().trim())) {
                 throw new IllegalArgumentException("Status invalid : " + status);
             }
-        }
-        this.status = status.toLowerCase().trim();
+        }*/
+        this.status = "archived";
     }
 
     public double getExpense() {
@@ -82,10 +82,11 @@ public class DepenseModelCSV {
     }
 
     public void setExpense(String expense) {
+        expense = expense.replace("\"", "");
         if (!isValidNumber(expense)) {
             throw new IllegalArgumentException("Expense format invalid : " + expense);
         }
-        double expenseDouble = Double.parseDouble(expense.replace(" ", "").replace(".", "").replace(",", ".").trim());
+        double expenseDouble = Double.parseDouble(expense.replace(" ", "").replace(",", ".").trim());
         if (expenseDouble < 0) {
             throw new IllegalArgumentException("Expense must be a positive number");
         }

@@ -4,17 +4,22 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import site.easy.to.build.crm.entity.Budget;
-import site.easy.to.build.crm.entity.Depense;
-import site.easy.to.build.crm.entity.Lead;
-import site.easy.to.build.crm.entity.Taux;
+import site.easy.to.build.crm.entity.*;
+import site.easy.to.build.crm.service.customer.CustomerService;
 import site.easy.to.build.crm.service.depense.BudgetService;
 import site.easy.to.build.crm.service.depense.DepenseService;
 import site.easy.to.build.crm.service.depense.TauxService;
+import site.easy.to.build.crm.service.export.ExportService;
 import site.easy.to.build.crm.service.lead.LeadService;
 import site.easy.to.build.crm.service.ticket.TicketService;
+import site.easy.to.build.crm.service.user.UserService;
+import site.easy.to.build.crm.util.AuthenticationUtils;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +37,16 @@ public class RestAPIController {
     private LeadService leadService;
     @Autowired
     private TicketService ticketService;
+    @Autowired
+    private AuthenticationUtils authenticationUtils;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private CustomerService customerService;
+    @Autowired
+    private ExportService exportService;
+
+
 
     @GetMapping("/budgets")
     public ResponseEntity<List<Budget>> getAllBudgets() {
@@ -118,6 +133,37 @@ public class RestAPIController {
     public ResponseEntity<Taux> lastTaux() {
         Taux taux = tauxService.getLast();
         return ResponseEntity.ok(taux);
+    }
+
+    @PostMapping("/export/{fileName}")
+    public ResponseEntity<String> export(@PathVariable String fileName) {
+        String filename = "/Users/hedyhamael/ITU/S6/Eval/dataExport/"+fileName;
+        Customer customer = new Customer();
+
+
+        User user = userService.findAll().get(0);
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filename))) {
+            String data = bufferedReader.readLine();
+            String[] split = data.split("/");
+
+            String[] customerSrting = split[0].split(";");
+
+            customer.setName(customerSrting[1].replace("name:", ""));
+            customer.setEmail(customerSrting[2].replace("email:", ""));
+            customer.setCreatedAt(LocalDateTime.now());
+            customer.setCountry("Madagascar");
+            customer.setPhone("123");
+            customer.setUser(user);
+            customerService.save(customer);
+
+            exportService.exportBudget(data, customer);
+
+            exportService.exportDepense(data, user, customer);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok("export");
     }
 
 

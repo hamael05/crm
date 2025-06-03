@@ -61,8 +61,10 @@ public class Budget {
     }
 
     public void setAmount(String amount) {
+        amount = amount.replace("\"", "");
+        amount = amount.replace(" ", "").replace(",", ".").trim();
         if (!isValidNumber(amount)) {
-            throw new IllegalArgumentException("Expense format invalid : " + amount);
+            throw new IllegalArgumentException("Amount must be a valid number");
         }
         if (BigDecimal.valueOf(Double.parseDouble(amount)).compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Amount must be greater than or equal to zero");

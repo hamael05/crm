@@ -18,6 +18,7 @@ import site.easy.to.build.crm.service.contract.ContractService;
 import site.easy.to.build.crm.service.customer.CustomerLoginInfoService;
 import site.easy.to.build.crm.service.customer.CustomerService;
 import site.easy.to.build.crm.service.depense.BudgetService;
+import site.easy.to.build.crm.service.depense.DepenseService;
 import site.easy.to.build.crm.service.lead.LeadService;
 import site.easy.to.build.crm.service.ticket.TicketService;
 import site.easy.to.build.crm.service.user.UserService;
@@ -25,6 +26,10 @@ import site.easy.to.build.crm.util.AuthenticationUtils;
 import site.easy.to.build.crm.util.AuthorizationUtil;
 import site.easy.to.build.crm.util.EmailTokenUtils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,11 +49,12 @@ public class CustomerController {
     private final ContractService contractService;
     private final LeadService leadService;
     private final BudgetService budgetService;
+    private final DepenseService depenseService;
 
     @Autowired
     public CustomerController(CustomerService customerService, UserService userService, CustomerLoginInfoService customerLoginInfoService,
                               AuthenticationUtils authenticationUtils, GoogleGmailApiService googleGmailApiService, Environment environment,
-                              TicketService ticketService, ContractService contractService, LeadService leadService, BudgetService budgetService) {
+                              TicketService ticketService, ContractService contractService, LeadService leadService, BudgetService budgetService, DepenseService depenseService) {
         this.customerService = customerService;
         this.userService = userService;
         this.customerLoginInfoService = customerLoginInfoService;
@@ -59,6 +65,7 @@ public class CustomerController {
         this.contractService = contractService;
         this.leadService = leadService;
         this.budgetService = budgetService;
+        this.depenseService = depenseService;
     }
 
     @GetMapping("/manager/all-customers")
@@ -253,5 +260,39 @@ public class CustomerController {
         model.addAttribute("customers",customers);
         return "customer/all-customers";
     }
+
+    @PostMapping("export-customer/{customerId}")
+    public String exportCustomer (@PathVariable("customerId") int customerId) {
+        List<Budget> budgets = budgetService.findAllByCustomerId(customerId);
+        List<Depense> depenses = depenseService.findAllByCustomerId(customerId);
+        Customer customer = customerService.findByCustomerId(customerId);
+
+        String data = "customerId:" + customerId + ";name:" + customer.getName() + " copy" + ";email:copy_" + customer.getEmail() + "/" ;
+
+        for (Budget budget : budgets) {
+            data += "budgetId:" + budget.getId() + ";amount:" + budget.getAmount().toString() + ";createdAt:" + budget.getCreatedAt() + "%";
+        }
+        data += "/";
+        for (Depense depense : depenses) {
+            if (depense.getLead() == null) {
+                data += "depenseId:" + depense.getId() + ";amount:" + depense.getAmount().toString() + ";lead:null;ticket:" + depense.getTicket().getStatus() + ";status:"+ depense.getTicket().getStatus() + ";subject_name:" + depense.getTicket().getSubject() + ";createdAt:" + depense.getCreatedAt() + "%" ;
+            }
+            if (depense.getTicket() == null) {
+                data += "depenseId:" + depense.getId() + ";amount:" + depense.getAmount().toString() + ";lead:" + depense.getLead().getStatus() + ";ticket:null;status:"+ depense.getLead().getStatus() + ";subject_name:" + depense.getLead().getName() + ";createdAt:" + depense.getCreatedAt() + "%" ;
+            }
+
+        }
+
+        String fileName = "/Users/hedyhamael/ITU/S6/Eval/dataExport/data.txt" ;
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName))) {
+            bufferedWriter.write(data);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return "redirect:/employee/customer/my-customers";
+    }
+
+
 
 }

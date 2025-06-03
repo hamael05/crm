@@ -21,7 +21,7 @@ public class DepenseService {
 
     public List<Depense> findAll() { return repository.findAll(); }
 
-    public List<Depense> findAllByCustomerId(int customerId) { return repository.findAllByCustomerId(customerId); }
+    public List<Depense> findAllByCustomerId(int customerId) { return repository.findByLeadCustomerCustomerIdOrTicketCustomerCustomerId(customerId, customerId); }
 
     public double sommeDepenseByCustomerId(int customerId) {
         List<Depense> depenses = repository.findByLeadCustomerCustomerIdOrTicketCustomerCustomerId(customerId, customerId);

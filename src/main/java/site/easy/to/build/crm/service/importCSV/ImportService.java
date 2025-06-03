@@ -80,47 +80,7 @@ public class ImportService {
         }
     }
 
-    public String checkErrorListDepenseCSV(String filePathOriginal) {
-        String filePath = "/Users/hedyhamael/ITU/S6/Eval/dataCSV/" + filePathOriginal;
-        if (filePath == null || filePath.trim().isEmpty()) {
-            System.err.println("Le chemin du fichier CSV ne peut pas être vide ou null.");
-            return "Le chemin du fichier CSV ne peut pas être vide ou null.";
-        }
 
-        try (CSVReader reader = new CSVReaderBuilder(new FileReader(filePath))
-                .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
-                .build()) {
-
-            reader.skip(1);
-            List<String[]> records = reader.readAll();
-
-            int ligne = 1;
-
-            for (String[] record : records) {
-                if (record.length < 5) { // Vérifie que la ligne contient assez de colonnes
-                    continue;
-                }
-                Customer customer = customerService.findByEmail(record[0]);
-                if (customer == null) {
-                    return "Email inexistant : " + record[0] + " a la  ligne " + ligne + " dans depense";
-                }
-                DepenseModelCSV depenseModelCSV = new DepenseModelCSV();
-                try {
-                    depenseModelCSV.setExpense(record[4]);
-                    depenseModelCSV.setType(record[2]);
-                    depenseModelCSV.setStatus(record[3]);
-                } catch (IllegalArgumentException e) {
-                    return e.getMessage() + " a la ligne " + ligne + " de la depense";
-                }
-                ligne++;
-            }
-
-            System.out.println("Importation terminée avec succès !");
-        } catch (IOException | CsvException e) {
-            System.err.println("Erreur lors de l'importation du fichier CSV : " + e.getMessage());
-        }
-        return "success";
-    }
 
     public void importDepense(String filePathOriginal, User user) {
         String filePath = "/Users/hedyhamael/ITU/S6/Eval/dataCSV/" + filePathOriginal;
@@ -144,6 +104,7 @@ public class ImportService {
                 DepenseModelCSV depenseModelCSV = new DepenseModelCSV();
                 depenseModelCSV.setExpense(record[4]);
                 Customer customer = customerService.findByEmail(record[0]);
+
                 Depense depense = new Depense();
                 depense.setCreatedAt(LocalDateTime.now());
                 depense.setAmount(BigDecimal.valueOf(depenseModelCSV.getExpense()));
@@ -153,7 +114,7 @@ public class ImportService {
                     ticket.setCustomer(customer);
                     ticket.setSubject(record[1]);
                     ticket.setCreatedAt(LocalDateTime.now());
-                    ticket.setStatus(record[3]);
+                    ticket.setStatus("archived");
                     ticket.setAmount(depenseModelCSV.getExpense());
                     ticket.setPriority("low");
                     ticket.setEmployee(user);
@@ -169,7 +130,7 @@ public class ImportService {
                     lead.setCustomer(customer);
                     lead.setName(record[1]);
                     lead.setCreatedAt(LocalDateTime.now());
-                    lead.setStatus(record[3]);
+                    lead.setStatus("archived");
                     lead.setAmount(depenseModelCSV.getExpense());
                     lead.setEmployee(user);
 
@@ -211,7 +172,7 @@ public class ImportService {
                 Budget budget = new Budget();
                 budget.setCustomer(customer);
                 budget.setCreatedAt(LocalDateTime.now());
-                budget.setAmount(BigDecimal.valueOf(Double.parseDouble(record[1])));
+                budget.setAmount(record[1]);
 
                 budgetService.save(budget);
 
@@ -222,6 +183,48 @@ public class ImportService {
             System.err.println("Erreur lors de l'importation du fichier CSV : " + e.getMessage());
         }
 
+    }
+
+    public String checkErrorListDepenseCSV(String filePathOriginal) {
+        String filePath = "/Users/hedyhamael/ITU/S6/Eval/dataCSV/" + filePathOriginal;
+        if (filePath == null || filePath.trim().isEmpty()) {
+            System.err.println("Le chemin du fichier CSV ne peut pas être vide ou null.");
+            return "Le chemin du fichier CSV ne peut pas être vide ou null.";
+        }
+
+        try (CSVReader reader = new CSVReaderBuilder(new FileReader(filePath))
+                .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
+                .build()) {
+
+            reader.skip(1);
+            List<String[]> records = reader.readAll();
+
+            int ligne = 1;
+
+            for (String[] record : records) {
+                if (record.length < 5) { // Vérifie que la ligne contient assez de colonnes
+                    continue;
+                }
+                Customer customer = customerService.findByEmail(record[0]);
+                if (customer == null) {
+                    return "Email inexistant : " + record[0] + " a la  ligne " + ligne + " dans depense";
+                }
+                DepenseModelCSV depenseModelCSV = new DepenseModelCSV();
+                try {
+                    depenseModelCSV.setExpense(record[4]);
+                    depenseModelCSV.setType(record[2]);
+                    depenseModelCSV.setStatus(record[3]);
+                } catch (IllegalArgumentException e) {
+                    return e.getMessage() + " a la ligne " + ligne + " de la depense";
+                }
+                ligne++;
+            }
+
+            System.out.println("Importation terminée avec succès !");
+        } catch (IOException | CsvException e) {
+            System.err.println("Erreur lors de l'importation du fichier CSV : " + e.getMessage());
+        }
+        return "success";
     }
 
     public String checkErrorBudget(String filePathOriginal) {
