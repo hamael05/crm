@@ -1,6 +1,8 @@
 package site.easy.to.build.crm.controller;
 
+import org.eclipse.angus.mail.smtp.SaslAuthenticator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.Banner;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -293,6 +295,36 @@ public class CustomerController {
         return "redirect:/employee/customer/my-customers";
     }
 
+    // salaire -------------------
+
+    @PostMapping("modif-salaire")
+    public String modifSalaireecz(Model model, @RequestParam double salaireValue, @RequestParam double pourcentage, @RequestParam int customerId) {
+
+        Customer customer = customerService.findByCustomerId(customerId);
+
+        // double montant = salaireValue * (1 + pourcentage/100);
+        // customer.setSalaire(montant);
+        // Salaire salaire = salaireService.findByidCustomer(idCustomer);
+        // salaire.setMontant(salaireValue);
+        // salaire.setPourcentage(pourcentage);
+        // customer.setSalaire(salaire);
+        // salaireService.save(salaire);
+
+        customerService.save(customer);
+
+        return "redirect:/employee/customer/my-customers";
+    }
+
+    public String createSalaire(Model model, @RequestParam double salaireValue, @RequestParam int customerId) {
+        Customer customer = customerService.findByCustomerId(customerId);
+
+        // Salaire salaire = new Salaire();
+        // salaire.setIdCustomer(idCustomer);
+        // salaire.setMontant(salaireValue);
+        // salaire.setPourcentage(pourcentage);
+        // salaireService.save(salaire);
+        return "redirect:/employee/customer/my-customers";
+    }
 
 
 }
